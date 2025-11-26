@@ -1,0 +1,159 @@
+# Question 1: C extension module (square)
+
+# C code (square.c)
+
+#include <Python.h>
+static PyObject* square(PyObject* self, PyObject* args) {
+    int x;
+    PyArg_ParseTuple(args, "i", &x);
+    return Py_BuildValue("i", x * x);
+}
+static PyMethodDef methods[] = {
+    {"square", square, METH_VARARGS, "square a number"},
+    {NULL, NULL, 0, NULL}
+};
+static struct PyModuleDef mod = {
+    PyModuleDef_HEAD_INIT,
+    "square_module",
+    NULL,
+    -1,
+    methods
+};
+PyMODINIT_FUNC PyInit_square_module(void) {
+    return PyModule_Create(&mod);
+}
+
+
+# Python usage:
+import square_module
+print(square_module.square(4))
+
+
+
+# Question 2: ctypes with a simple C library
+# C code (strlib.c)
+
+#include <ctype.h>
+void make_upper(char* s) {
+    int i = 0;
+    while (s[i] != '\\0') {
+        s[i] = toupper(s[i]);
+        i++;
+    }
+}
+
+
+# Python usage:
+from ctypes import CDLL, c_char_p
+lib = CDLL("./strlib.so")
+lib.make_upper.argtypes = [c_char_p]
+text = bytearray(b"hello")
+lib.make_upper(text)
+print(text.decode())
+
+
+
+
+# Question 3: C++ + pybind11 (string concat)
+# C++ code (concat.cpp)
+
+#include <pybind11/pybind11.h>
+#include <string>
+
+namespace py = pybind11;
+std::string join_strings(std::string a, std::string b) {
+    return a + b;
+}
+
+PYBIND11_MODULE(concat_module, m) {
+    m.def("join_strings", &join_strings);
+}
+
+
+# Python usage:
+
+import concat_module
+print(concat_module.join_strings("Hi ", "there"))
+
+
+
+
+# Question 4: ctypes vs extension modules
+
+
+ctypes:
+- Works with compiled C libraries.
+- Easier to start with.
+- No need to write a Python-specific module.
+
+Extension modules:
+- You write C code that becomes a Python module.
+- Faster and more integrated.
+- Harder to build because it needs compilation and setup.
+
+
+
+
+# Question 5: Simple C array module
+
+# C code (array.c)
+"""
+#include <Python.h>
+#include <stdlib.h>
+
+static int* arr;
+static PyObject* arr_init(PyObject* self, PyObject* args) {
+    int size;
+    PyArg_ParseTuple(args, "i", &size);
+    arr = (int*)malloc(size * sizeof(int));
+    return Py_None;
+}
+
+static PyObject* arr_set(PyObject* self, PyObject* args) {
+    int i, v;
+    PyArg_ParseTuple(args, "ii", &i, &v);
+    arr[i] = v;
+    return Py_None;
+}
+
+static PyObject* arr_get(PyObject* self, PyObject* args) {
+    int i;
+    PyArg_ParseTuple(args, "i", &i);
+    return Py_BuildValue("i", arr[i]);
+}
+
+static PyObject* arr_free(PyObject* self, PyObject* args) {
+    free(arr);
+    return Py_None;
+}
+
+static PyMethodDef methods[] = {
+    {"init", arr_init, METH_VARARGS, ""},
+    {"set", arr_set, METH_VARARGS, ""},
+    {"get", arr_get, METH_VARARGS, ""},
+    {"free", arr_free, METH_VARARGS, ""},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef mod = {
+    PyModuleDef_HEAD_INIT,
+    "array_module",
+    NULL,
+    -1,
+    methods
+};
+
+PyMODINIT_FUNC PyInit_array_module(void) {
+    return PyModule_Create(&mod);
+}
+
+
+# Python usage:
+
+import array_module
+
+array_module.init(3)
+array_module.set(0, 5)
+print(array_module.get(0))
+array_module.free()
+
